@@ -45,7 +45,8 @@ public class CcsClient implements PacketListener {
 	private String mProjectId = null;
 	private boolean mDebuggable = false;
 	private String fcmServerUsername = null;
-
+	private String message = null;
+	
 	public static CcsClient getInstance() {
 		if (sInstance == null) {
 			throw new IllegalStateException("You have to prepare the client first");
@@ -203,10 +204,14 @@ public class CcsClient implements PacketListener {
 			PayloadProcessor processor = ProcessorFactory.getProcessor(action);
 			processor.handleMessage(inMessage);
 		}
-
+		setMessage(inMessage.getDataPayload().get((Util.PAYLOAD_ATTRIBUTE_MESSAGE)));
+		
 		// Send ACK to FCM
 		String ack = MessageHelper.createJsonAck(inMessage.getFrom(), inMessage.getMessageId());
 		send(ack);
+		if (message != null) {
+			connection.disconnect();
+		}
 	}
 
 	/**
@@ -321,6 +326,14 @@ public class CcsClient implements PacketListener {
 			String jsonRequest = MessageHelper.createJsonMessage(map);
 			send(jsonRequest);
 		}
+	}
+
+	public String getMessage() {
+		return message;
+	}
+
+	public void setMessage(String message) {
+		this.message = message;
 	}
 
 }

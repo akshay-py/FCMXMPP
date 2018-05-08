@@ -16,16 +16,7 @@ public class DeviceLocator {
 		ExecutorService executor = Executors.newCachedThreadPool();
 		Future<String> futureCall = executor.submit(new LocatorWorker(fcmProjectSenderId, fcmServerKey, toRegId));
 		
-		/*while(!futureCall.isDone()) {
-            System.out.println("Task is still not done...");
-            try {
-				Thread.sleep(20000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-        }*/
-	    String result = null;
+		String result = null;
 		try {
 			result = futureCall.get();
 		} catch (InterruptedException | ExecutionException e) {

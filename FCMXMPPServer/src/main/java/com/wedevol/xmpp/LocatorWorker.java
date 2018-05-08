@@ -21,6 +21,7 @@ public class LocatorWorker implements Callable<String> {
 	String toRegId;
 	String fcmProjectSenderId;
 	String fcmServerKey;
+	CountDownLatch latch = new CountDownLatch(1);
 	
 	public LocatorWorker(String fcmProjectSenderId, String fcmServerKey, String toRegId2) {
 		this.toRegId = toRegId2;
@@ -32,7 +33,7 @@ public class LocatorWorker implements Callable<String> {
 	
 	@Override
 	public String call() {
-		CcsClient ccsClient = CcsClient.prepareClient(fcmProjectSenderId, fcmServerKey, false);
+		CcsClient ccsClient = CcsClient.prepareClient(fcmProjectSenderId, fcmServerKey, false, latch);
 
 		try {
 			ccsClient.connect();
@@ -48,12 +49,15 @@ public class LocatorWorker implements Callable<String> {
 		String jsonRequest = MessageHelper.createJsonOutMessage(message);
 		ccsClient.send(jsonRequest);
 		String locationMessage = null;
+		
 		try {
-			Thread.sleep(200000);
+			latch.await();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		
 		if (ccsClient.getMessage() != null) {
 			locationMessage = ccsClient.getMessage();
 		}

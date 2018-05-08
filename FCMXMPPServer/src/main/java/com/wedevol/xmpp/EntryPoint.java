@@ -25,7 +25,7 @@ public class EntryPoint {
 		final String fcmServerKey = args[1];
 		final String toRegId = args[2];
 
-		CcsClient ccsClient = CcsClient.prepareClient(fcmProjectSenderId, fcmServerKey, true);
+		CcsClient ccsClient = CcsClient.prepareClient(fcmProjectSenderId, fcmServerKey, true, null);
 
 		try {
 			ccsClient.connect();

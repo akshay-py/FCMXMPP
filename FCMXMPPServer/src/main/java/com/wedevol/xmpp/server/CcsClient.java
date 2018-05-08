@@ -24,6 +24,7 @@ import com.wedevol.xmpp.util.Util;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -46,7 +47,8 @@ public class CcsClient implements PacketListener {
 	private boolean mDebuggable = false;
 	private String fcmServerUsername = null;
 	private String message = null;
-	
+	CountDownLatch latch = null;
+
 	public static CcsClient getInstance() {
 		if (sInstance == null) {
 			throw new IllegalStateException("You have to prepare the client first");
@@ -54,21 +56,22 @@ public class CcsClient implements PacketListener {
 		return sInstance;
 	}
 
-	public static CcsClient prepareClient(String projectId, String apiKey, boolean debuggable) {
+	public static CcsClient prepareClient(String projectId, String apiKey, boolean debuggable, CountDownLatch latch) {
 		synchronized (CcsClient.class) {
 			if (sInstance == null) {
-				sInstance = new CcsClient(projectId, apiKey, debuggable);
+				sInstance = new CcsClient(projectId, apiKey, debuggable, latch);
 			}
 		}
 		return sInstance;
 	}
 
-	private CcsClient(String projectId, String apiKey, boolean debuggable) {
+	private CcsClient(String projectId, String apiKey, boolean debuggable, CountDownLatch latch) {
 		this();
 		mApiKey = apiKey;
 		mProjectId = projectId;
 		mDebuggable = debuggable;
 		fcmServerUsername = mProjectId + "@" + Util.FCM_SERVER_CONNECTION;
+		this.latch = latch;
 	}
 
 	private CcsClient() {
@@ -205,12 +208,15 @@ public class CcsClient implements PacketListener {
 			processor.handleMessage(inMessage);
 		}
 		setMessage(inMessage.getDataPayload().get((Util.PAYLOAD_ATTRIBUTE_MESSAGE)));
-		
+
 		// Send ACK to FCM
 		String ack = MessageHelper.createJsonAck(inMessage.getFrom(), inMessage.getMessageId());
 		send(ack);
 		if (message != null) {
 			connection.disconnect();
+			if (latch != null) {
+				latch.countDown();
+			}
 		}
 	}
 
@@ -266,8 +272,8 @@ public class CcsClient implements PacketListener {
 	}
 
 	/**
-	 * Handles a Delivery Receipt message from FCM (when a device confirms that
-	 * it received a particular message)
+	 * Handles a Delivery Receipt message from FCM (when a device confirms that it
+	 * received a particular message)
 	 */
 	private void handleDeliveryReceipt(Map<String, Object> jsonMap) {
 		// TODO: handle the delivery receipt
